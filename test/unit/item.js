@@ -8,6 +8,7 @@ var Item = require('../../app/models/item');
 var dbConnect = require('../../app/lib/mongodb');
 var Mongo = require('mongodb');
 
+var ipad, android, cell;
 describe('Item', function(){
   before(function(done){
     dbConnect('commerce-test', function(){
@@ -17,7 +18,19 @@ describe('Item', function(){
   
   beforeEach(function(done){
     Item.collection.remove(function() {
-          done();
+      var i = {name:'iPad', dimensions:{l:'3', w:'4', h:'5'}, weight:'2.5', color:'pink', quantity:'30', msrp:'200', percentOff:'5'};
+      var a = {name:'android', dimensions:{l:'4', w:'4', h:'5'}, weight:'2.5', color:'green', quantity:'30', msrp:'100', percentOff:'5'};
+      var c = {name:'cell', dimensions:{l:'5', w:'4', h:'5'}, weight:'2.5', color:'blue', quantity:'30', msrp:'300', percentOff:'5'};
+      ipad = new Item(i);
+      android = new Item(a);
+      cell = new Item(c);
+      ipad.save(function(){
+        android.save(function(){
+          cell.save( function () {
+            done();
+           }); 
+         });
+        });
       });
     });
 
@@ -55,6 +68,36 @@ describe('Item', function(){
       ipad.save(function (){
         expect(ipad._id).to.be.instanceof(Mongo.ObjectID); 
         done();
+      });
+    });
+  });
+
+  describe('.find', function() {
+     it('should find all items in db', function (done){
+      Item.find({}, function(err, items){
+        expect(items).to.have.length(3);
+        done();
+     });
+    });
+  });
+
+  describe('.findById', function() {
+    it('should find an item by id', function(done){
+      Item.findById(ipad._id, function(err, item){
+        expect(ipad.name).to.equal('iPad');
+        expect(ipad).to.respondTo('cost');
+        done();
+      });
+    });
+  });
+
+  describe('.deleteById', function() {
+    it('should delete an item by ID', function(done){
+      Item.deleteById(ipad._id, function(){
+        Item.find({}, function( err, items){
+          expect(items).to.have.length(2);
+          done();
+        });
       });
     });
   });
